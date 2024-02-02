@@ -1,0 +1,126 @@
+{
+  "name": "hc3fs",
+  "displayName": "hc3fs",
+  "description": "HC3 fs",
+  "version": "0.0.1",
+  "publisher": "jan@gabrielsson.com",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onFileSystem:hc3fs"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+		"commands": [
+			{
+				"command": "hc3fs.workspaceInit",
+				"title": "Setup Workspace",
+				"category": "hc3fs"
+			},
+			{
+				"command": "hc3fs.init",
+				"title": "Create Files",
+				"category": "hc3fs"
+			},
+			{
+				"command": "hc3fs.toggleLog",
+				"title": "Toggle HC3 logs",
+				"category": "hc3fs"
+			},
+			{
+				"command": "hc3fs.downloadFQA",
+				"title": "Download .fqa",
+				"category": "hc3fs"
+			}
+		],
+		"menus": {
+			"commandPalette": [
+				{
+					"command": "hc3fs.init",
+					"when": "workbenchState == workspace"
+				},
+				{
+					"command": "hc3fs.workspaceInit",
+					"when": "workbenchState != workspace"
+				},
+        {
+					"command": "hc3fs.toggleLog",
+					"when": "workbenchState == workspace"
+				}
+			],
+      "terminal/context": [
+        {
+          "command": "hc3fs.toggleLog",
+          "when": "terminalIsOpen && terminalProcessSupported"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "hc3fs.downloadFQA",
+          "when": "resourceScheme == hc3fs && resourcePath =~ /\\d+_.\\w+$/"
+        }
+      ]
+		},
+		"configuration": {
+      "title": "HC3FS",
+      "properties": {
+        "hc3fs.user": {
+          "type": "string",
+          "default": "admin",
+          "description": "User name on HC3."
+        },
+        "hc3fs.password": {
+          "type": "string",
+          "default": "admin",
+          "description": "Password for user on HC3."
+        },
+        "hc3fs.url": {
+          "type": "string",
+          "default": "http://<ip>",
+          "description": "URL to HC3."
+        },
+        "hc3fs.dir": {
+          "type": "directory",
+          "default": "",
+          "description": "Path to .vscode directory"
+        },
+        "hc3fs.hc3log": {
+          "type": "boolean",
+          "default": false,
+          "description": "Fetch logs from HC3."
+        },
+        "hc3fs.debug": {
+          "type": "boolean",
+          "default": false,
+          "description": "Log file operations."
+        }
+      }
+    }
+	},
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "18.x",
+    "@typescript-eslint/eslint-plugin": "^6.19.1",
+    "@typescript-eslint/parser": "^6.19.1",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3",
+    "@vscode/test-cli": "^0.0.4",
+    "@vscode/test-electron": "^2.3.9"
+  },
+  "dependencies": {
+    "isomorphic-fetch": "^0"
+  }
+}

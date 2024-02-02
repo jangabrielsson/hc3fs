@@ -1,0 +1,5 @@
+Sync with refresh states
+Re-initialize
+V HC3Log button
+-download fqa
+Refactor
