@@ -4,6 +4,9 @@
   "description": "HC3 fs",
   "version": "0.0.1",
   "publisher": "jan@gabrielsson.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jangabrielsson/hc3fs/tree/master"},
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -35,6 +38,11 @@
 				"command": "hc3fs.downloadFQA",
 				"title": "Download .fqa",
 				"category": "hc3fs"
+			},
+			{
+				"command": "hc3fs.downloadScene",
+				"title": "Download Scene",
+				"category": "hc3fs"
 			}
 		],
 		"menus": {
@@ -61,7 +69,11 @@
       "explorer/context": [
         {
           "command": "hc3fs.downloadFQA",
-          "when": "resourceScheme == hc3fs && resourcePath =~ /\\d+_.\\w+$/"
+          "when": "resourceScheme == hc3fs && resourcePath =~ /\\/QuickApps\\/\\d+ \\w+$/"
+        },
+        {
+          "command": "hc3fs.downloadScene",
+          "when": "resourceScheme == hc3fs && resourcePath =~ /\\/Scenes\\/\\d+ \\w+$/"
         }
       ]
 		},
@@ -121,6 +133,5 @@
     "@vscode/test-electron": "^2.3.9"
   },
   "dependencies": {
-    "isomorphic-fetch": "^0"
   }
 }
