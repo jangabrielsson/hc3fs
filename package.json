@@ -117,12 +117,12 @@
         },
         "hc3fs.hc3log": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Fetch logs from HC3."
         },
         "hc3fs.debug": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Log file operations."
         }
       }
