@@ -3,10 +3,7 @@
 *  Licensed under the MIT License. See License.txt in the project root for license information.
 *--------------------------------------------------------------------------------------------*/
 
-
-import * as path from 'path';
 import * as vscode from 'vscode';
-import * as fs from 'fs';
 import { COLORMAP } from './colorMap';
 import { QAFile, QA, QADir } from './QA';
 import { SceneFile, Scene, SceneDir } from './Scene';
@@ -188,6 +185,7 @@ export class HC3 {
 						if (this.tags.get(m.tag) === undefined) {
 							this.tags.set(m.tag, false);
 						}
+						// this.debug(`hc3log: ${m.tag}`);
 						if (this.tags.get(m.tag) && m.tag.startsWith('QUICKAPP') && !m.message.includes('PluginChangedViewEvent')) {
 							const time = new Date(1000*m.timestamp).toLocaleTimeString();
 							printHC3ConsoleChannel(time,m.type,m.tag,m.message);
@@ -290,6 +288,7 @@ export class HC3 {
 			this.tags.set(key, false);
 		});
 		for (const tag of result || []) {
+			this.debug(`enablig tag: ${tag.label}`);
 			this.tags.set(tag.label, true);
 		}
 	}

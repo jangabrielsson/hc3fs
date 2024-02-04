@@ -2,7 +2,7 @@
   "name": "hc3fs",
   "displayName": "hc3fs",
   "description": "HC3 fs",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "publisher": "jan@gabrielsson.com",
   "license": "MIT",
   "author": {
@@ -71,7 +71,7 @@
 				},
 				{
 					"command": "hc3fs.workspaceInit",
-					"when": "workbenchState != workspace"
+					"when": "true"
 				},
         {
 					"command": "hc3fs.logFilter",
