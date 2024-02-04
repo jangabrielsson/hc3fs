@@ -36,8 +36,11 @@ export const printHC3fslogChannel = (content: string, reveal = false): void => {
 	}
 };
 
+export function deactivate() {
+	O_HC3fslog.info('hc3fs says "Goodbye"');
+}
+
 export function activate(context: vscode.ExtensionContext) {
-	
 	O_HC3Console = vscode.window.createOutputChannel("HC3 console",{log: true});
 	O_HC3Events = vscode.window.createOutputChannel("HC3 events",{log: true});
 	O_HC3fslog = vscode.window.createOutputChannel("HC3 fslog",{log: true});
@@ -47,22 +50,23 @@ export function activate(context: vscode.ExtensionContext) {
 	conf.update('autoSave', 'off');
 	
 	conf = vscode.workspace.getConfiguration('hc3fs');
-	const hc3 = new HC3(conf);
-	
-	hc3.callHC3("GET", "/settings/info/").then((data) => {
-		O_HC3fslog.info("HC3 version: " + data.softVersion);
-	}).catch((err) => {
-		vscode.window.showErrorMessage(err);
-	});
-	
-	const hc3Fs = new HC3FS(hc3);
-	context.subscriptions.push(vscode.workspace.registerFileSystemProvider('hc3fs', hc3Fs, { isCaseSensitive: true }));
-	inited = true;
-	
+	let hc3: HC3;
+
+	if (!inited) {
+		const hc3Fs = new HC3FS();
+		context.subscriptions.push(vscode.workspace.registerFileSystemProvider('hc3fs', hc3Fs, { isCaseSensitive: true }));
+		hc3 = new HC3(conf);
+		hc3Fs.setHC3(hc3);
+		hc3.callHC3("GET", "/settings/info/").then((data) => {
+			O_HC3fslog.info("HC3 version: " + data.softVersion);
+			vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse('hc3fs:/'), name: `HC3FS - ${conf.url}` });
+			inited = true;
+		}).catch((err) => {
+			vscode.window.showErrorMessage(err);
+		});
+	}
+
 	context.subscriptions.push(vscode.commands.registerCommand('hc3fs.workspaceInit', _ => {
-		if (!inited) {
-			return;
-		}
 		vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse('hc3fs:/'), name: `HC3FS - ${conf.url}` });
 	}));
 	

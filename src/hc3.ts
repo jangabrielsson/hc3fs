@@ -254,7 +254,7 @@ export class HC3 {
 		this.debug('refreshStatesPoller terminated, too many access errors');
 	}
 
-  _emitter = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
+  _emitter?: vscode.EventEmitter<vscode.FileChangeEvent[]>;
 	private _bufferedEvents: vscode.FileChangeEvent[] = [];
 	private _fireSoonHandle?: NodeJS.Timer;
 	
@@ -266,7 +266,7 @@ export class HC3 {
 		}
 		
 		this._fireSoonHandle = setTimeout(() => {
-			this._emitter.fire(this._bufferedEvents);
+			this._emitter!.fire(this._bufferedEvents);
 			this._bufferedEvents.length = 0;
 		}, 5);
 	}

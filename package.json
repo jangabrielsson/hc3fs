@@ -70,8 +70,7 @@
 					"when": "workbenchState == workspace"
 				},
 				{
-					"command": "hc3fs.workspaceInit",
-					"when": "true"
+					"command": "hc3fs.workspaceInit"
 				},
         {
 					"command": "hc3fs.logFilter",

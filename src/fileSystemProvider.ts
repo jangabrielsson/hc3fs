@@ -12,14 +12,23 @@ import { HC3, isNode, Node, isLeaf, Leaf } from './hc3';
 
 export class HC3FS implements vscode.FileSystemProvider {
 	vdir: string;
-	hc3: HC3;
+	hc3?: HC3;
+	private _emitter: vscode.EventEmitter<vscode.FileChangeEvent[]>;
   readonly onDidChangeFile: vscode.Event<vscode.FileChangeEvent[]>;
 
-	constructor(hc3: HC3) {
-		this.vdir = hc3.vdir;
-		this.hc3 = hc3;
-		this.onDidChangeFile = this.hc3._emitter.event;
+	constructor() {
+		this.vdir = '';
+		this._emitter = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
+		this.onDidChangeFile = this._emitter.event;
+	}
 
+	setHC3(hc3: HC3) {
+		this.hc3 = hc3;
+		this.hc3._emitter = this._emitter;
+	}
+
+	private isInited() {
+		if (!this.hc3) { throw vscode.FileSystemError.NoPermissions("HC3 not mounted");}
 	}
 	
 	watch(_resource: vscode.Uri): vscode.Disposable {
@@ -36,19 +45,21 @@ export class HC3FS implements vscode.FileSystemProvider {
 	// --- manage file metadata
 	
 	async stat(uri: vscode.Uri): Promise<vscode.FileStat> {
-		const entry = await this.hc3.lookup(uri.path, false);
+		this.isInited();
+		const entry = await this.hc3!.lookup(uri.path, false);
 		if (!entry) {
-			this.hc3.debug('stat: ' + uri.path + ' not found');
+			this.hc3!.debug('stat: ' + uri.path + ' not found');
 			throw vscode.FileSystemError.FileNotFound();
 		}
-		this.hc3.debug('stat: ' + uri.path + ' found');
+		this.hc3!.debug('stat: ' + uri.path + ' found');
 		return entry as vscode.FileStat;
 	}
 	
 	async readDirectory(uri: vscode.Uri): Promise<Array<[string, vscode.FileType]>> {
-		this.hc3.debug('readDirectory: ' + uri.path);
-		const inited = await this.hc3.waitForInit();
-		const entry = await this.hc3.lookup(uri.path, false);
+		this.isInited();
+		this.hc3!.debug('readDirectory: ' + uri.path);
+		const inited = await this.hc3!.waitForInit();
+		const entry = await this.hc3!.lookup(uri.path, false);
 		if (isNode(entry)) {
 			const result: [string, vscode.FileType][] = [];
 			for (const [name, child] of entry.entries) {
@@ -62,6 +73,7 @@ export class HC3FS implements vscode.FileSystemProvider {
 	// --- manage file contents
 	
 	async readFile(uri: vscode.Uri): Promise<Uint8Array> {
+		this.isInited();
 		if (uri.path.startsWith('/.vscode')) {
 			// const filePath = this.vdir + uri.path;
 			// try {
@@ -73,20 +85,21 @@ export class HC3FS implements vscode.FileSystemProvider {
 			// }
 			throw vscode.FileSystemError.FileNotFound();
 		}
-		this.hc3.debug('readFile: ' + uri.path);
-		const inited = await this.hc3.waitForInit();
-		const entry = await this.hc3.lookup(uri.path, false);
+		this.hc3!.debug('readFile: ' + uri.path);
+		const inited = await this.hc3!.waitForInit();
+		const entry = await this.hc3!.lookup(uri.path, false);
 		if (isLeaf(entry)) {
 			const data = await entry.getContent();
-			this.hc3.debug(`readFile: ${uri.path} (${data.byteLength} bytes)`);
+			this.hc3!.debug(`readFile: ${uri.path} (${data.byteLength} bytes)`);
 			return data;
 		}
 		throw vscode.FileSystemError.FileNotFound();
 	}
 	
 	async writeFile(uri: vscode.Uri, content: Uint8Array, options: { create: boolean, overwrite: boolean }): Promise<void> {
+		this.isInited();
 		let [dir, name] = this.splitPath(uri);
-		const entry = await this.hc3.lookup(dir, false);
+		const entry = await this.hc3!.lookup(dir, false);
 		if (isNode(entry)) {
 			if (entry.permissions === vscode.FilePermission.Readonly) {
 				throw vscode.FileSystemError.NoPermissions();
@@ -98,11 +111,11 @@ export class HC3FS implements vscode.FileSystemProvider {
 				throw vscode.FileSystemError.FileNotFound();
 			}
 			if (entry.entries.has(name)) {
-				this.hc3.debug(`writeFile: ${uri.path} (${content.byteLength} bytes)`);
+				this.hc3!.debug(`writeFile: ${uri.path} (${content.byteLength} bytes)`);
 				const leaf = entry.entries.get(name) as Leaf;
 				return leaf.writeContent(content);
 			} else {
-				this.hc3.debug('createFile: ' + uri.path);
+				this.hc3!.debug('createFile: ' + uri.path);
 				const node = entry as Node;
 				const leaf = node.createLeaf(name);
 				return leaf.writeContent(content);
@@ -114,7 +127,8 @@ export class HC3FS implements vscode.FileSystemProvider {
 	// --- manage files/folders
 	
 	async rename(oldUri: vscode.Uri, newUri: vscode.Uri, options: { overwrite: boolean }): Promise<void> {
-		const entry = await this.hc3.lookup(oldUri.path, false);
+		this.isInited();
+		const entry = await this.hc3!.lookup(oldUri.path, false);
 		let [oldDir, oldName] = this.splitPath(oldUri);
 		let [newDir, newName] = this.splitPath(newUri);
 		if (oldDir !== newDir) {
@@ -123,17 +137,18 @@ export class HC3FS implements vscode.FileSystemProvider {
 		}
 		if (isLeaf(entry)) {
 		  entry.rename(newName,options);
-			this.hc3.debug(`renamed: ${oldUri.path} to ${newUri.path}`);
+			this.hc3!.debug(`renamed: ${oldUri.path} to ${newUri.path}`);
 			return;
 		}
 		throw vscode.FileSystemError.FileNotFound();
 	}
 	
 	async delete(uri: vscode.Uri): Promise<void> {
-		const entry = await this.hc3.lookup(uri.path, false);
+		this.isInited();
+		const entry = await this.hc3!.lookup(uri.path, false);
 		if (isLeaf(entry)) {
 			entry.delete();
-			this.hc3.debug('deleted: ' + uri.path);
+			this.hc3!.debug('deleted: ' + uri.path);
 			return;
 		}
 		throw vscode.FileSystemError.FileNotFound();
@@ -145,8 +160,9 @@ export class HC3FS implements vscode.FileSystemProvider {
 	// }
 	
 	async createDirectory(uri: vscode.Uri): Promise<void> {
+		this.isInited();
 		let [dir, name] = this.splitPath(uri);
-		const entry = await this.hc3.lookup(dir, false);
+		const entry = await this.hc3!.lookup(dir, false);
 		if (isNode(entry)) {
 			await entry.createLeaf(name);
 		}
