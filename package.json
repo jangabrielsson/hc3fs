@@ -2,8 +2,16 @@
   "name": "hc3fs",
   "displayName": "hc3fs",
   "description": "HC3 fs",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "jan@gabrielsson.com",
+  "license": "MIT",
+  "author": {
+    "name": "Jan Gabrielsson",
+    "email": "jan@gabrielsson.com"
+  },
+  "bugs": {
+    "url": "https://github.com/jangabrielsson/hc3fs/issues"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/jangabrielsson/hc3fs/tree/master"},
@@ -25,8 +33,8 @@
 				"category": "hc3fs"
 			},
 			{
-				"command": "hc3fs.init",
-				"title": "Create Files",
+				"command": "hc3fs.resync",
+				"title": "Sync changes from HC3",
 				"category": "hc3fs"
 			},
 			{
@@ -43,12 +51,22 @@
 				"command": "hc3fs.downloadScene",
 				"title": "Download Scene",
 				"category": "hc3fs"
+			},
+			{
+				"command": "hc3fs.logFilter",
+				"title": "Filter HC3 log on tags",
+				"category": "hc3fs"
+			},
+      {
+				"command": "hc3fs.toggleReadOnly",
+				"title": "Toggle read only for file",
+				"category": "hc3fs"
 			}
 		],
 		"menus": {
 			"commandPalette": [
 				{
-					"command": "hc3fs.init",
+					"command": "hc3fs.resync",
 					"when": "workbenchState == workspace"
 				},
 				{
@@ -56,16 +74,10 @@
 					"when": "workbenchState != workspace"
 				},
         {
-					"command": "hc3fs.toggleLog",
+					"command": "hc3fs.logFilter",
 					"when": "workbenchState == workspace"
 				}
 			],
-      "terminal/context": [
-        {
-          "command": "hc3fs.toggleLog",
-          "when": "terminalIsOpen && terminalProcessSupported"
-        }
-      ],
       "explorer/context": [
         {
           "command": "hc3fs.downloadFQA",
@@ -74,6 +86,14 @@
         {
           "command": "hc3fs.downloadScene",
           "when": "resourceScheme == hc3fs && resourcePath =~ /\\/Scenes\\/\\d+ \\w+$/"
+        },
+        {
+          "command": "hc3fs.toggleReadOnly",
+          "when": "resourceScheme == hc3fs && resourcePath =~ /\\/QuickApps.+\\.lua$/"
+        },
+        {
+          "command": "hc3fs.resync",
+          "when": "resourceScheme == hc3fs && (resourcePath == '/Scenes' || resourcePath == '/QuickApps')"
         }
       ]
 		},
@@ -94,11 +114,6 @@
           "type": "string",
           "default": "http://<ip>",
           "description": "URL to HC3."
-        },
-        "hc3fs.dir": {
-          "type": "directory",
-          "default": "",
-          "description": "Path to .vscode directory"
         },
         "hc3fs.hc3log": {
           "type": "boolean",

@@ -62,14 +62,15 @@ export class HC3FS implements vscode.FileSystemProvider {
 	
 	async readFile(uri: vscode.Uri): Promise<Uint8Array> {
 		if (uri.path.startsWith('/.vscode')) {
-			const filePath = this.vdir + uri.path;
-			try {
-			  // this.hc3.debug('read fs file: ' + uri.path);
-				const fileContent = fs.readFileSync(filePath);
-				return Uint8Array.from(fileContent);
-			} catch (e) {
-				throw vscode.FileSystemError.FileNotFound();
-			}
+			// const filePath = this.vdir + uri.path;
+			// try {
+			//   // this.hc3.debug('read fs file: ' + uri.path);
+			// 	const fileContent = fs.readFileSync(filePath);
+			// 	return Uint8Array.from(fileContent);
+			// } catch (e) {
+			// 	throw vscode.FileSystemError.FileNotFound();
+			// }
+			throw vscode.FileSystemError.FileNotFound();
 		}
 		this.hc3.debug('readFile: ' + uri.path);
 		const inited = await this.hc3.waitForInit();
@@ -120,7 +121,9 @@ export class HC3FS implements vscode.FileSystemProvider {
 			throw vscode.FileSystemError.NoPermissions();
 		}
 		if (isLeaf(entry)) {
-			return entry.rename(newName,options);
+		  entry.rename(newName,options);
+			this.hc3.debug(`renamed: ${oldUri.path} to ${newUri.path}`);
+			return;
 		}
 		throw vscode.FileSystemError.FileNotFound();
 	}
@@ -128,7 +131,9 @@ export class HC3FS implements vscode.FileSystemProvider {
 	async delete(uri: vscode.Uri): Promise<void> {
 		const entry = await this.hc3.lookup(uri.path, false);
 		if (isLeaf(entry)) {
-			return entry.delete();
+			entry.delete();
+			this.hc3.debug('deleted: ' + uri.path);
+			return;
 		}
 		throw vscode.FileSystemError.FileNotFound();
 	}

@@ -10,6 +10,8 @@ import * as fs from 'fs';
 import { COLORMAP } from './colorMap';
 import { QAFile, QA, QADir } from './QA';
 import { SceneFile, Scene, SceneDir } from './Scene';
+import { printHC3ConsoleChannel, printHC3EventsChannel, printHC3fslogChannel } from './extension';
+import { stringify } from 'querystring';
 
 const LOGCOLOR = 'blue';
 
@@ -65,6 +67,7 @@ export class HC3 {
 	hc3LogFlag = false;
 	hc3LogTimeStamp = Math.floor(Date.now() / 1000);
 
+	tags: Map<string, boolean> = new Map();
   qas: QADir;
   scenes: SceneDir;
 
@@ -73,7 +76,7 @@ export class HC3 {
 		this.vdir = conf.vdir;
 		this.creds = "Basic " + Buffer.from(`${conf.user}:${conf.password}`).toString('base64');
 		this.debugFlag = conf.debug || true;
-		this.hc3LogFlag = conf.hc3log;
+		this.hc3LogFlag = conf.hc3log || true;
 		this.hc3LogPoller(); 				// start log polling
 		this.refreshStatePoller();  // start refreshStates polling
 
@@ -120,7 +123,7 @@ export class HC3 {
 
 	initialized() {
 		this.initFlag = true;
-		this.debug('initialized',LOGCOLOR);
+		this.debug('initialized');
 		this.initResolve!();
 	}
 
@@ -131,13 +134,14 @@ export class HC3 {
 		return this.initPromise;
 	}
 
-	log(msg: string, color: string = 'white') {
-		console.log(this.colorText(color,msg));
+	logEvents(msg: string) {
+		printHC3EventsChannel(msg);
 	}
 
-	debug(msg: string, color: string = 'blue') {
+	debug(msg: string) {
 		if (this.debugFlag) {
-			console.log(this.colorText(color,msg));
+			printHC3fslogChannel(msg);
+			console.log(msg);
 		}
 	}
 	
@@ -181,15 +185,18 @@ export class HC3 {
 						this.hc3LogTimeStamp = m.timestamp;
 						m.message = m.message.replace(/&nbsp;/g, ' '); // fix spaces
 						m.message = m.message.replace(/<br>/g, '\n'); // fix spaces
-						if (m.tag.startsWith('QUICKAPP') && !m.message.includes('PluginChangedViewEvent')) {
+						if (this.tags.get(m.tag) === undefined) {
+							this.tags.set(m.tag, false);
+						}
+						if (this.tags.get(m.tag) && m.tag.startsWith('QUICKAPP') && !m.message.includes('PluginChangedViewEvent')) {
 							const time = new Date(1000*m.timestamp).toLocaleTimeString();
-							this.log(`${time}:${m.tag}: ${m.message}`);
+							printHC3ConsoleChannel(time,m.type,m.tag,m.message);
 						}
 					}
 					this.hc3LogTimeStamp = msg.timestamp ? msg.timestamp : this.hc3LogTimeStamp;
 				}
 			} catch (err) {
-				this.debug(`log fetch failed: ${err}`,LOGCOLOR);
+				this.debug(`log fetch failed: ${err}`);
 			}
 		}, interval);
 	}
@@ -229,7 +236,9 @@ export class HC3 {
 				const data = await this.callHC3("GET",url);
 				last = data.last;
 				for (const event of data.events || []) {
-					this.log(`event: ${event.type}`);
+					if (this.debugFlag) {
+						this.logEvents(`event: ${event.type}`);
+					}
 					if (event.type === 'QuickAppFilesChangedEvent') {
 						this.HC3filesChanged(event.data.id);
 					} else if (event.type === 'DeviceCreatedEvent') {
@@ -240,7 +249,7 @@ export class HC3 {
 				}
 			} catch (err) {
 				nerr += 1;
-				this.debug(`refreshStates failed: ${err}`,LOGCOLOR);
+				this.debug(`refreshStates failed: ${err}`);
 			}
 			await new Promise(f => setTimeout(f, 1000));
 		} // while
@@ -262,6 +271,27 @@ export class HC3 {
 			this._emitter.fire(this._bufferedEvents);
 			this._bufferedEvents.length = 0;
 		}, 5);
+	}
+
+	// commands
+
+	async logFilterPicker() {
+		let i = 0;
+		let tags: vscode.QuickPickItem[] = [];
+		this.tags.forEach((value: boolean, key: string) => {
+			tags.push({label: key, picked: value});
+		});
+
+		const result = await vscode.window.showQuickPick(tags, {
+			placeHolder: 'Select tags to show in the log',
+			canPickMany: true,
+		});
+		this.tags.forEach((value: boolean, key: string) => {
+			this.tags.set(key, false);
+		});
+		for (const tag of result || []) {
+			this.tags.set(tag.label, true);
+		}
 	}
 
   async downloadFQA(spec: any) {
@@ -293,6 +323,19 @@ export class HC3 {
       this.debug(`downloaded ${scene!.sname}.scene`);
     }
   }
+
+	async toggleReadOnly(spec: any) {
+		const qaFile = await this.lookup(spec.path,false) as QAFile;
+		qaFile.toggleReadOnly();
+	}
+
+	async resyncQA() {
+		this.qas.resync();
+	}
+
+	async resyncScenes() {
+		this.scenes.resync();
+	}
 }
 
 

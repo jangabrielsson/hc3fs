@@ -46,6 +46,14 @@ export class SceneFile implements vscode.FileStat {
   writeContent(content: Uint8Array) {
 		this.data = content;
 	}
+
+	toggleReadOnly() {
+		if (this.permissions === vscode.FilePermission.Readonly) {
+			this.permissions = undefined;
+		} else {
+			this.permissions = vscode.FilePermission.Readonly;
+		}
+	}
 }
 
 export class Scene implements vscode.FileStat {
@@ -161,4 +169,9 @@ export class SceneDir implements vscode.FileStat {
 			throw err;
 		}
   }
+
+	async resync() {
+		this.entries.clear();
+		await this.refresh();
+	}
 }

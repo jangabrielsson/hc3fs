@@ -10,7 +10,7 @@ export class QAFile implements vscode.FileStat {
 	
 	name: string;
 	data?: Uint8Array;
-	permissions?: vscode.FilePermission;
+	permissions? = vscode.FilePermission.Readonly;
 	
   deviceId: number;
 	fname: string;
@@ -72,6 +72,14 @@ export class QAFile implements vscode.FileStat {
 	writeContent(content: Uint8Array) {
 		this.data = content;
 		return this.flushFile();
+	}
+
+	toggleReadOnly() {
+		if (this.permissions === vscode.FilePermission.Readonly) {
+			this.permissions = undefined;
+		} else {
+			this.permissions = vscode.FilePermission.Readonly;
+		}
 	}
 
 	async initialize() {
@@ -276,5 +284,10 @@ export class QADir implements vscode.FileStat {
 	createLeaf(name: string): any {
     throw new Error("QA's can't be created");
   }
+
+	async resync() {
+		this.entries.clear();
+		await this.refresh();
+	}
 
 }
