@@ -2,7 +2,7 @@
   "name": "hc3fs",
   "displayName": "hc3fs",
   "description": "HC3 fs",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "publisher": "jan@gabrielsson.com",
   "license": "MIT",
   "author": {
@@ -80,11 +80,11 @@
       "explorer/context": [
         {
           "command": "hc3fs.downloadFQA",
-          "when": "resourceScheme == hc3fs && resourcePath =~ /\\/QuickApps\\/\\d+ \\w+$/"
+          "when": "resourceScheme == hc3fs && resourcePath =~ /\\/QuickApps\\/\\d+_\\w+$/"
         },
         {
           "command": "hc3fs.downloadScene",
-          "when": "resourceScheme == hc3fs && resourcePath =~ /\\/Scenes\\/\\d+ \\w+$/"
+          "when": "resourceScheme == hc3fs && resourcePath =~ /\\/Scenes\\/\\d+_\\w+$/"
         },
         {
           "command": "hc3fs.toggleReadOnly",

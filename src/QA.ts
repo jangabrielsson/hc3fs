@@ -139,7 +139,7 @@ export class QA implements vscode.FileStat {
 		this.ctime = Date.now();
 		this.mtime = Date.now();
 		this.size = 0;
-		this.name = `${id} ${name}`;
+		this.name = `${id}_${name}`; // Creating files with spaces in them can cause trouble...
 
 		this.hc3 = hc3;
 		this.qaName = name;
