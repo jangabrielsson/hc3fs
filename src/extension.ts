@@ -36,9 +36,7 @@ export const printHC3fslogChannel = (content: string, reveal = false): void => {
 	}
 };
 
-export function deactivate() {
-	O_HC3fslog.info('hc3fs says "Goodbye"');
-}
+let fdec: vscode.Disposable | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
 	O_HC3Console = vscode.window.createOutputChannel("HC3 console",{log: true});
@@ -60,6 +58,7 @@ export function activate(context: vscode.ExtensionContext) {
 		hc3.callHC3("GET", "/settings/info/").then((data) => {
 			O_HC3fslog.info("HC3 version: " + data.softVersion);
 			vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse('hc3fs:/'), name: `HC3FS - ${conf.url}` });
+			let decClass = new FileDecorationProvider(true, true, "X", hc3);   // fileDecorator Class
 			inited = true;
 		}).catch((err) => {
 			vscode.window.showErrorMessage(err);
@@ -115,5 +114,60 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 		hc3.toggleReadOnly(spec);
 	}));
+}
+
+export function deactivate() {
+	O_HC3fslog.info('hc3fs says "Goodbye"');
+	fdec?.dispose();
+}
+
+class FileDecorationProvider {    
+	disposables: vscode.Disposable[];   
+	colorEnabled: boolean;
+	color?: vscode.ThemeColor;
+	badgeEnabled: boolean;
+	newBadge?: string; 
+	hc3: HC3;
+
+  constructor(colorEnabled: boolean, badgeEnabled: boolean, newBadge: string, hc3: HC3) {
+		this.hc3 = hc3;
+    this.disposables = [];
+    this.disposables.push(vscode.window.registerFileDecorationProvider(this));
+    
+    this.colorEnabled = colorEnabled;
+    this.colorEnabled ? this.color = new vscode.ThemeColor("highlightFiles.nonWorkspaceFiles") : this.color = undefined;
+    
+    this.badgeEnabled = badgeEnabled;
+    this.badgeEnabled ? this.newBadge = newBadge : this.newBadge = undefined;
+    if (this.badgeEnabled) { this.newBadge = this.newBadge || '!'; }
+  }
+  
+  async provideFileDecoration(uri: vscode.Uri) {
+		const path = uri.path;
+    if (!(uri.scheme === 'hc3fs' && path.endsWith(".lua"))) {
+			return;
+		}
+		const file = await this.hc3.lookup(uri.path,true);
+    return {
+      //badge: this.newBadge,
+      badge: "\u21C7",  // ⛖
+      color: new vscode.ThemeColor("highlightFiles.workspaceFolder1"),
+      propagate: true,
+      tooltip: "Workspace TestMultiRoot"
+    };
+  }
+    
+    // if ((isFile.type === 1) && (result < 0))    // is a file, not a directory && not in workspace
+    //   return {
+    //     badge: this.newBadge,
+    //     // badge: "\u26D6",  // ⛖
+    //     color: this.color,
+    //     tooltip: "File not in workspace"
+    //   };
+    // }
+
+  dispose() {
+    this.disposables.forEach((d) => d.dispose());
+  }
 }
 
