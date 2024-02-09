@@ -2,7 +2,7 @@
   "name": "hc3fs",
   "displayName": "hc3fs",
   "description": "HC3 fs",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "publisher": "jan@gabrielsson.com",
   "license": "MIT",
   "author": {
@@ -29,17 +29,12 @@
 		"commands": [
 			{
 				"command": "hc3fs.workspaceInit",
-				"title": "Setup Workspace",
+				"title": "Mount HC3 workspace",
 				"category": "hc3fs"
 			},
 			{
-				"command": "hc3fs.resync",
-				"title": "Sync changes from HC3",
-				"category": "hc3fs"
-			},
-			{
-				"command": "hc3fs.toggleLog",
-				"title": "Toggle HC3 logs",
+				"command": "hc3fs.logFilter",
+				"title": "Filter HC3 log on tags",
 				"category": "hc3fs"
 			},
 			{
@@ -51,30 +46,16 @@
 				"command": "hc3fs.downloadScene",
 				"title": "Download Scene",
 				"category": "hc3fs"
-			},
-			{
-				"command": "hc3fs.logFilter",
-				"title": "Filter HC3 log on tags",
-				"category": "hc3fs"
-			},
-      {
-				"command": "hc3fs.toggleReadOnly",
-				"title": "Toggle read only for file",
-				"category": "hc3fs"
 			}
 		],
 		"menus": {
 			"commandPalette": [
 				{
-					"command": "hc3fs.resync",
-					"when": "workbenchState == workspace"
-				},
-				{
 					"command": "hc3fs.workspaceInit"
 				},
         {
 					"command": "hc3fs.logFilter",
-					"when": "workbenchState == workspace"
+					"when": "resourceScheme == hc3fs"
 				}
 			],
       "explorer/context": [
@@ -85,14 +66,6 @@
         {
           "command": "hc3fs.downloadScene",
           "when": "resourceScheme == hc3fs && resourcePath =~ /\\/Scenes\\/\\d+_\\w+$/"
-        },
-        {
-          "command": "hc3fs.toggleReadOnly",
-          "when": "resourceScheme == hc3fs && resourcePath =~ /\\/QuickApps.+\\.lua$/"
-        },
-        {
-          "command": "hc3fs.resync",
-          "when": "resourceScheme == hc3fs && (resourcePath == '/Scenes' || resourcePath == '/QuickApps')"
         }
       ]
 		},
