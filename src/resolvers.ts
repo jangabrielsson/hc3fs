@@ -37,7 +37,7 @@ class QuickAppsResolver implements Resolver { // QuickApp -> populates QuickAppD
 const FILEMARK = '&%#!HC3F';
 class QuickAppResolver implements Resolver { // QuickApp -> populates QuickAppDir
 	hc3: HC3;
-	resolved: Map<string, boolean> = new Map();
+	resolved: Map<string, any> = new Map();
 
 	constructor(hc3: HC3) {
 		this.hc3 = hc3;
@@ -65,11 +65,22 @@ class QuickAppResolver implements Resolver { // QuickApp -> populates QuickAppDi
 			buff.add(`--%%file=${fname}.lua,${fname !== 'main' && fname || 'main2'};\n`);
 		}
 		await write('.run.lua',buff.toString());
-		this.resolved.set(path,true)
+		this.resolved.set(path,rsrc);
 		logfs(`QuickAppResolver: resolved ${path}`);
 	}
 
 	async decorate(path:string): Promise<vscode.FileDecoration | undefined> {
+		logfs(`QuickAppResolver: decorate ${path}`);
+		const rsrc = this.resolved.get(path);
+		if (rsrc) {
+			const created = new Date(rsrc.created*1000).toLocaleString();
+			const modified = new Date(rsrc.modified*1000).toLocaleString();
+			return {
+				color: new vscode.ThemeColor("highlightFiles.workspaceFolder1"),
+				propagate: true,
+				tooltip: `type:${rsrc.type}\ncreated:${created}\nmodified:${modified}`
+			};
+		}
 		return;
 	}
 }
@@ -99,7 +110,7 @@ class ScenesResolver implements Resolver { // Scene -> populates ScenesDir
 
 class SceneResolver implements Resolver { // Scene -> populates ScenesDir
 	hc3: HC3;
-	resolved: Map<string, boolean> = new Map();
+	resolved: Map<string, any> = new Map();
 	constructor(hc3: HC3) {
 		this.hc3 = hc3;
 	}
@@ -118,25 +129,46 @@ class SceneResolver implements Resolver { // Scene -> populates ScenesDir
       const cont = JSON.parse(rsrc.content);
       write('block.json',JSON.stringify(cont,null,2));
     }
-		this.resolved.set(path,true);
+		this.resolved.set(path,rsrc);
 		logfs(`SceneResolver: resolved ${path}`);
 	}
 
 	async decorate(path:string): Promise<vscode.FileDecoration | undefined> {
+		logfs(`QuickAppResolver: decorate ${path}`);
+		const rsrc = this.resolved.get(path);
+		if (rsrc) {
+			const created = new Date(rsrc.created*1000).toLocaleString();
+			const modified = new Date(rsrc.updated*1000).toLocaleString();
+			const typ = rsrc.type === "json" ? "block" : rsrc.type;
+			return {
+				badge: typ.slice(0,1).toUpperCase(),  // ⛖
+				color: new vscode.ThemeColor("highlightFiles.workspaceFolder1"),
+				propagate: true,
+				tooltip: `type:${typ}\ncreated:${created}\nmodified:${modified}`
+			};
+		}
 		return;
 	}
 }
 
-async function resolveFile(hc3: HC3, path: string, data: string): Promise<string> {
-	const res = data.match(/QAFILE (\d+) (.+)/);
-	const content = await hc3.api.getQAfileContent(Number(res![1]),res![2]);
-	await hc3.writeFile(path, content);
-	return content.toString();
+async function resolveFile(hc3: HC3, path: string): Promise<string> {
+	let d = (await hc3.readFile(path)).toString();
+	if (d.toString().startsWith(FILEMARK)) {
+		const res = d.match(/QAFILE (\d+) (.+)/);
+		const content = await hc3.api.getQAfileContent(Number(res![1]),res![2]);
+		await hc3.writeFile(path, content);
+	  d = content.toString();
+	}
+	return d;	
+}
+
+class FileInfo {
+	content?: string;
 }
 
 class FileResolver implements Resolver { // File -> ...
 	hc3: HC3;
-	resolvedFiles: Map<string, any> = new Map();
+	resolvedFiles: Map<string, FileInfo> = new Map();
 	constructor(hc3: HC3) {
 		this.hc3 = hc3;
 	}
@@ -144,16 +176,20 @@ class FileResolver implements Resolver { // File -> ...
 		this.resolvedFiles.delete(path);
 	}
 	async resolve(path:string,read:boolean): Promise<void> {
-		if (this.resolvedFiles.has(path)) { return; }
+		const info = this.resolvedFiles.get(path);
+		if (info) {
+			if (read && !info.content) {
+				info.content = await resolveFile(this.hc3, path);
+			}
+			return; 
+		}
 		if (await fileExist(this.hc3.fdir+path)) {
+			const info = new FileInfo;
 			if (read) { // Resolve from a read operation
-				let data = (await this.hc3.readFile(path)).toString();
-				if (data.toString().startsWith(FILEMARK)) {
-					data = await resolveFile(this.hc3, path, data);
-				}
-				this.resolvedFiles.set(path, data);
+				info.content = await resolveFile(this.hc3, path);
+				this.resolvedFiles.set(path,info);
 			} else { 
-				this.resolvedFiles.set(path, true);
+				this.resolvedFiles.set(path, info);
 			}
 			return;
 		}
