@@ -14,7 +14,8 @@ import {
 import { read } from 'fs';
 import { log } from 'console';
 import { Resolver, getResolvers } from './resolvers';
-export class HC3 {
+
+export class HC3 implements vscode.Disposable {
 	api: API;
 	fdir?: string;
 	gate = new Gate();
@@ -39,6 +40,15 @@ export class HC3 {
 		});
 	}
 	
+	dispose() {
+		try {
+			fs.rmdir(this.fdir!, {recursive: true});
+			logfs(`removed fdir: ${this.fdir}`);
+		} catch (err) {
+			this.debug(`failed removing fdir: ${err}`);
+		}
+	}
+
 	debug(msg: string) {
 		logfs(msg);
 	}
@@ -49,7 +59,7 @@ export class HC3 {
 		const s = sep;
 		this.fdir = await fs.mkdtemp(`${tmpDir}${s}`);
 		vscode.workspace.workspaceFolders?.forEach(async (wf) => {
-			logfs(`ticks: ${wf.uri.scheme} ${wf.uri.path}`);
+			logfs(`folders: ${wf.uri.scheme} ${wf.uri.path}`);
 			if (wf.uri.path.endsWith('fibemu')) {
 				const ft = vscode.Uri.parse(`${wf.uri.path}${s}.fdir.txt`);
 				const fdirData = Buffer.from(this.fdir!);
@@ -59,6 +69,11 @@ export class HC3 {
 		logfs(`fdir: ${this.fdir}`);
 	}
 	
+	startDebugging() {
+		this.debug('startDebugging');
+		fs.writeFile(`${os.tmpdir}/hc3fs.path`, Buffer.from(this.fdir || ''));
+	}
+
 	async createDir(path: string) {
 		await vscode.workspace.fs.createDirectory(vscode.Uri.parse(this.fdir+path));
 		logfs(`created local dir: ${path}`);
@@ -85,7 +100,7 @@ export class HC3 {
 	}
 	
 	lock = new Lock();
-	async resolvePath(path: string, read = false) {
+	async resolvePath(path: string, read = false): Promise<Resolver | void> {
 		if (path === '/') { return;}
 		const parts = path.split('/');
 		let currPath = "";
@@ -100,6 +115,7 @@ export class HC3 {
 				await resolvers[i].resolve(currPath,read);
 			} 
 		});
+		return resolvers[parts.length-1];
 	}
 
 	toggleLog() {

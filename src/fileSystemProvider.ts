@@ -23,7 +23,7 @@ class FS implements vscode.FileStat {
 	}
 }
 
-export class HC3FS implements vscode.FileSystemProvider {
+export class HC3FS implements vscode.FileSystemProvider, vscode.Disposable {
 	fdir: string;
 	hc3?: HC3;
 	private _emitter: vscode.EventEmitter<vscode.FileChangeEvent[]>;
@@ -33,6 +33,11 @@ export class HC3FS implements vscode.FileSystemProvider {
 		this.fdir = '';
 		this._emitter = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
 		this.onDidChangeFile = this._emitter.event;
+	}
+
+	dispose() {
+		this._emitter.dispose();
+		this.hc3?.dispose();
 	}
 
 	setHC3(hc3: HC3) {

@@ -7,6 +7,7 @@ type PathResolveFn = (path:string,read:boolean) => Promise<void>;
 
 export interface Resolver {
 	resolve: PathResolveFn;
+	decorate: (path:string) => Promise<vscode.FileDecoration | undefined> ;
 }
 
 class QuickAppsResolver implements Resolver { // QuickApp -> populates QuickAppDir
@@ -26,6 +27,10 @@ class QuickAppsResolver implements Resolver { // QuickApp -> populates QuickAppD
 		}
 		logfs(`QuickAppsResolver: resolved ${path}`);
 		this.initialised = true;
+	}
+
+	async decorate(path:string): Promise<vscode.FileDecoration | undefined> {
+		return;
 	}
 }
 
@@ -63,6 +68,10 @@ class QuickAppResolver implements Resolver { // QuickApp -> populates QuickAppDi
 		this.resolved.set(path,true)
 		logfs(`QuickAppResolver: resolved ${path}`);
 	}
+
+	async decorate(path:string): Promise<vscode.FileDecoration | undefined> {
+		return;
+	}
 }
 
 class ScenesResolver implements Resolver { // Scene -> populates ScenesDir
@@ -81,6 +90,10 @@ class ScenesResolver implements Resolver { // Scene -> populates ScenesDir
 		}
 		logfs(`ScenesResolver: resolved ${path}`);
 		this.initialised = true;
+	}
+
+	async decorate(path:string): Promise<vscode.FileDecoration | undefined> {
+		return;
 	}
 }
 
@@ -107,6 +120,10 @@ class SceneResolver implements Resolver { // Scene -> populates ScenesDir
     }
 		this.resolved.set(path,true);
 		logfs(`SceneResolver: resolved ${path}`);
+	}
+
+	async decorate(path:string): Promise<vscode.FileDecoration | undefined> {
+		return;
 	}
 }
 
@@ -141,6 +158,10 @@ class FileResolver implements Resolver { // File -> ...
 			return;
 		}
 		throw vscode.FileSystemError.FileNotFound();
+	}
+
+	async decorate(path:string): Promise<vscode.FileDecoration | undefined> {
+		return;
 	}
 }
 
